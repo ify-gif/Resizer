@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import UploadZone from './components/UploadZone';
 import LeftPanel from './components/LeftPanel';
 import PreviewPanel from './components/PreviewPanel';
-import UpscaleWarningModal from './components/UpscaleWarningModal';
+
+// @ts-ignore
+import JSZip from 'jszip';
+import { processImage } from './utils/imageProcessor';
 
 export interface AVPreset {
   id: string;
@@ -10,7 +13,8 @@ export interface AVPreset {
   width: number;
   height: number;
   useCase: string;
-  format: 'jpeg' | 'png';
+  format: 'jpg' | 'png';
+  safeZoneId?: string;
 }
 
 export interface ImageData {
@@ -22,60 +26,57 @@ export interface ImageData {
 
 export const AV_PRESETS: AVPreset[] = [
   {
-    id: '1080p',
-    name: '1080p Display',
-    width: 1920,
-    height: 1080,
-    useCase: 'Standard HD displays and monitors',
-    format: 'jpeg'
+    id: 'crestron-1070',
+    name: 'Crestron TSW-1070',
+    width: 1280,
+    height: 800,
+    useCase: 'Standard Crestron 10" touch panel wallpaper',
+    format: 'jpg',
+    safeZoneId: 'crestron'
   },
   {
-    id: '4k',
-    name: '4K Display',
+    id: 'extron-1025',
+    name: 'Extron TLP Pro 1025',
+    width: 1024,
+    height: 600,
+    useCase: 'TouchLink Pro 10" wall/tabletop panels',
+    format: 'jpg',
+    safeZoneId: 'extron'
+  },
+  {
+    id: 'cisco-room',
+    name: 'Cisco Room Navigator',
+    width: 1920,
+    height: 1200,
+    useCase: 'Modern Cisco Webex room controllers',
+    format: 'jpg',
+    safeZoneId: 'cisco'
+  },
+  {
+    id: 'zoom-pad',
+    name: 'Zoom Room Controller',
+    width: 2048,
+    height: 1536,
+    useCase: 'iPad-based Zoom Room control interfaces',
+    format: 'jpg',
+    safeZoneId: 'zoom'
+  },
+  {
+    id: 'teams-panel',
+    name: 'MS Teams Panel',
+    width: 1280,
+    height: 800,
+    useCase: 'Microsoft Teams scheduling and control panels',
+    format: 'jpg',
+    safeZoneId: 'teams'
+  },
+  {
+    id: 'signage-4k',
+    name: 'Signage 4K (Landscape)',
     width: 3840,
     height: 2160,
-    useCase: 'Ultra HD displays and projectors',
-    format: 'jpeg'
-  },
-  {
-    id: 'signage-landscape',
-    name: 'Digital Signage Landscape',
-    width: 1920,
-    height: 1080,
-    useCase: 'Horizontal digital signage displays',
-    format: 'jpeg'
-  },
-  {
-    id: 'signage-portrait',
-    name: 'Digital Signage Portrait',
-    width: 1080,
-    height: 1920,
-    useCase: 'Vertical digital signage displays',
-    format: 'jpeg'
-  },
-  {
-    id: 'powerpoint',
-    name: 'PowerPoint Optimized',
-    width: 1280,
-    height: 720,
-    useCase: 'Presentations and slide decks',
-    format: 'jpeg'
-  },
-  {
-    id: 'control-panel',
-    name: 'Control Panel UI',
-    width: 1024,
-    height: 768,
-    useCase: 'Touch panel interfaces and control systems',
-    format: 'png'
-  },
-  {
-    id: 'documentation',
-    name: 'Documentation/Web',
-    width: 800,
-    height: 600,
-    useCase: 'Web pages and documentation',
-    format: 'jpeg'
+    useCase: 'Ultra HD digital signage and message boards',
+    format: 'jpg'
   }
 ];
 
@@ -84,8 +85,8 @@ function App() {
   const [selectedPreset, setSelectedPreset] = useState<AVPreset | null>(null);
   const [activeTab, setActiveTab] = useState<'presets' | 'custom' | 'batch'>('presets');
   const [quality, setQuality] = useState<number>(85);
-  const [showUpscaleWarning, setShowUpscaleWarning] = useState(false);
-  const [upscaleInfo, setUpscaleInfo] = useState<{ original: string; target: string } | null>(null);
+  const [isProcessingBatch, setIsProcessingBatch] = useState(false);
+  const [batchProgress, setBatchProgress] = useState(0);
 
   const [customWidth, setCustomWidth] = useState<number>(0);
   const [customHeight, setCustomHeight] = useState<number>(0);
@@ -93,6 +94,16 @@ function App() {
   const [outputFormat, setOutputFormat] = useState<string>('original');
   const [targetFileSize, setTargetFileSize] = useState<number>(0);
   const [fileSizeUnit, setFileSizeUnit] = useState<'KB' | 'MB'>('KB');
+  const [sharpenAmount, setSharpenAmount] = useState<number>(0);
+  const [isCropEnabled, setIsCropEnabled] = useState<boolean>(false);
+  const [userPresets, setUserPresets] = useState<AVPreset[]>(() => {
+    const saved = localStorage.getItem('ify_user_presets');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('ify_user_presets', JSON.stringify(userPresets));
+  }, [userPresets]);
 
   const handleFilesAdded = (files: File[]) => {
     const newImages: ImageData[] = [];
@@ -126,55 +137,160 @@ function App() {
   };
 
   const handleCrop = () => {
-    console.log('Crop functionality to be implemented');
+    setIsCropEnabled(!isCropEnabled);
+  };
+
+  const handleClear = () => {
+    setImages([]);
+    setCustomWidth(0);
+    setCustomHeight(0);
   };
 
   const handleConvert = (format: string) => {
-    setOutputFormat(format);
+    if (format === 'cycle') {
+      const formats = ['original', 'jpg', 'png', 'webp'];
+      const currentIndex = formats.indexOf(outputFormat);
+      const nextIndex = (currentIndex + 1) % formats.length;
+      setOutputFormat(formats[nextIndex]);
+    } else {
+      setOutputFormat(format);
+    }
   };
 
   const handleCompress = () => {
-    console.log('Compress functionality applied via quality slider');
+    // Quick Optimize: Quality 75%, 1MB Target
+    setQuality(75);
+    setTargetFileSize(1);
+    setFileSizeUnit('MB');
+    setSharpenAmount(25); // Subtle sharpening for AV panels
   };
 
   const handlePresetSelect = (preset: AVPreset) => {
     setSelectedPreset(preset);
+  };
 
-    if (images.length > 0) {
-      const originalImage = images[0];
-      const isUpscaling = preset.width > originalImage.width || preset.height > originalImage.height;
+  const saveUserPreset = (name: string, width: number, height: number, format: 'jpg' | 'png') => {
+    const newPreset: AVPreset = {
+      id: `user-${Date.now()}`,
+      name,
+      width,
+      height,
+      useCase: 'User-Defined Configuration',
+      format
+    };
+    setUserPresets(prev => [...prev, newPreset]);
+  };
 
-      if (isUpscaling) {
-        setUpscaleInfo({
-          original: `${originalImage.width}×${originalImage.height}`,
-          target: `${preset.width}×${preset.height}`
-        });
-        setShowUpscaleWarning(true);
+  const deleteUserPreset = (id: string) => {
+    setUserPresets(prev => prev.filter(p => p.id !== id));
+    if (selectedPreset?.id === id) {
+      setSelectedPreset(null);
+    }
+  };
+
+  const handleBatchProcess = async () => {
+    if (images.length === 0 || isProcessingBatch) return;
+
+    setIsProcessingBatch(true);
+    setBatchProgress(0);
+
+    try {
+      const zip = new JSZip();
+
+      // Determine target config
+      let targetW = customWidth;
+      let targetH = customHeight;
+      let targetFmt = outputFormat;
+
+      if (selectedPreset) {
+        targetW = selectedPreset.width;
+        targetH = selectedPreset.height;
+        targetFmt = selectedPreset.format; // Standardize to preset format
       }
+
+      // Fallback if no dims set
+      if (!targetW || !targetH) {
+        // Default to first image dims if nothing selected
+        targetW = images[0].width;
+        targetH = images[0].height;
+      }
+
+      await Promise.all(images.map(async (img) => {
+        try {
+          const blob = await processImage({
+            file: img.file,
+            targetWidth: targetW,
+            targetHeight: targetH,
+            format: targetFmt,
+            quality: quality,
+            sharpenAmount: sharpenAmount,
+            isCropEnabled: isCropEnabled,
+            targetFileSize: fileSizeUnit === 'MB' ? targetFileSize : targetFileSize / 1024
+          });
+
+          // Filename logic
+          const ext = targetFmt === 'original' ? img.file.name.split('.').pop() : (targetFmt === 'jpg' ? 'jpg' : targetFmt);
+          const name = img.file.name.substring(0, img.file.name.lastIndexOf('.')) || img.file.name;
+          zip.file(`${name}_optimized.${ext}`, blob);
+
+          setBatchProgress(prev => prev + 1);
+        } catch (error) {
+          console.error(`Failed to process ${img.file.name}`, error);
+        }
+      }));
+
+      // Generate Zip
+      const content = await zip.generateAsync({ type: 'blob' });
+
+      // Download Trigger
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(content);
+      link.download = `AV_Batch_Export_${Date.now()}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+    } catch (error) {
+      console.error('Batch failed', error);
+    } finally {
+      setIsProcessingBatch(false);
     }
   };
 
   return (
-    <div className="dark h-screen bg-background text-foreground flex flex-col overflow-hidden">
-      {/* Header */}
-      <header className="bg-card border-b border-border px-6 py-4 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <img src="/image.png" alt="Logo" className="w-8 h-8" />
-          <h1 className="text-xl font-bold">AV Image Resizer</h1>
+    <div className="dark h-screen bg-background text-foreground flex flex-col overflow-hidden font-sans">
+      {/* Precision Header */}
+      <header className="glass border-b border-border/50 px-8 py-4 flex-shrink-0 z-50 flex items-center justify-between app-region-drag select-none h-[72px]">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20 shadow-lg shadow-primary/5">
+            <img src="/logo.png" alt="Logo" className="w-6 h-6 object-contain" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold tracking-tight text-foreground leading-none">AV Image Resizer</h1>
+            <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] mt-1 opacity-80">Pro Optimization Suite</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-6 mr-[140px] app-region-no-drag">
+          <div className="flex items-center gap-3 bg-card/40 px-4 py-2 rounded-xl border border-border/50 shadow-inner">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Active Assets</span>
+            <div className="w-px h-3 bg-border/50" />
+            <span className="text-sm font-mono font-bold text-primary">{images.length}</span>
+          </div>
         </div>
       </header>
 
-      {/* Upload Zone */}
-      <UploadZone onFilesAdded={handleFilesAdded} hasImages={images.length > 0} />
-
-      {/* Main Content Area */}
+      {/* Workspace */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel - Settings */}
+        {/* Settings Engine */}
         <LeftPanel
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           selectedPreset={selectedPreset}
           onPresetSelect={handlePresetSelect}
+          userPresets={userPresets}
+          onDeleteUserPreset={deleteUserPreset}
+          onSaveUserPreset={saveUserPreset}
           quality={quality}
           setQuality={setQuality}
           originalWidth={images.length > 0 ? images[0].width : 0}
@@ -194,31 +310,48 @@ function App() {
           setTargetFileSize={setTargetFileSize}
           fileSizeUnit={fileSizeUnit}
           setFileSizeUnit={setFileSizeUnit}
+          sharpenAmount={sharpenAmount}
+          setSharpenAmount={setSharpenAmount}
+          isCropEnabled={isCropEnabled}
+          images={images}
+          onProcessBatch={handleBatchProcess}
+          isProcessing={isProcessingBatch}
+          batchProgress={batchProgress}
+          batchTarget={images.length}
+          configSummary={selectedPreset ? `${selectedPreset.name} (${selectedPreset.width}x${selectedPreset.height})` : `Custom (${customWidth}x${customHeight})`}
         />
 
-        {/* Right Panel - Preview */}
-        <PreviewPanel
-          images={images}
-          selectedPreset={selectedPreset}
-          quality={quality}
-          customWidth={customWidth}
-          customHeight={customHeight}
-          activeTab={activeTab}
-          outputFormat={outputFormat}
-          targetFileSize={targetFileSize}
-          fileSizeUnit={fileSizeUnit}
-        />
+        {/* Visualization & Mastery Panel */}
+        <div className="flex-1 flex flex-col relative">
+          {images.length > 0 && (
+            <div className="px-8 pt-4 flex-shrink-0">
+              <UploadZone onFilesAdded={handleFilesAdded} hasImages={true} />
+            </div>
+          )}
+
+          <PreviewPanel
+            images={images}
+            selectedPreset={selectedPreset}
+            quality={quality}
+            customWidth={customWidth}
+            customHeight={customHeight}
+            activeTab={activeTab}
+            outputFormat={outputFormat}
+            targetFileSize={targetFileSize}
+            fileSizeUnit={fileSizeUnit}
+            sharpenAmount={sharpenAmount}
+            isCropEnabled={isCropEnabled}
+            onClear={handleClear}
+          />
+
+          {images.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center p-12">
+              <UploadZone onFilesAdded={handleFilesAdded} hasImages={false} />
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Upscale Warning Modal */}
-      {showUpscaleWarning && upscaleInfo && (
-        <UpscaleWarningModal
-          originalDimensions={upscaleInfo.original}
-          targetDimensions={upscaleInfo.target}
-          onClose={() => setShowUpscaleWarning(false)}
-          onContinue={() => setShowUpscaleWarning(false)}
-        />
-      )}
     </div>
   );
 }

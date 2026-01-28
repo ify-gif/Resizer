@@ -1,12 +1,18 @@
 import { AVPreset } from '../App';
 import AVPresetsTab from './AVPresetsTab';
 import CustomTab from './CustomTab';
+import BatchTab from './BatchTab';
+import { ImageData } from '../App';
+import { LayoutGrid, Settings2, FolderSync } from 'lucide-react';
 
 interface LeftPanelProps {
   activeTab: 'presets' | 'custom' | 'batch';
   setActiveTab: (tab: 'presets' | 'custom' | 'batch') => void;
   selectedPreset: AVPreset | null;
   onPresetSelect: (preset: AVPreset) => void;
+  userPresets: AVPreset[];
+  onDeleteUserPreset: (id: string) => void;
+  onSaveUserPreset: (name: string, width: number, height: number, format: 'jpg' | 'png') => void;
   quality: number;
   setQuality: (quality: number) => void;
   originalWidth: number;
@@ -26,6 +32,15 @@ interface LeftPanelProps {
   setTargetFileSize: (size: number) => void;
   fileSizeUnit: 'KB' | 'MB';
   setFileSizeUnit: (unit: 'KB' | 'MB') => void;
+  sharpenAmount: number;
+  setSharpenAmount: (amount: number) => void;
+  isCropEnabled: boolean;
+  images: ImageData[];
+  onProcessBatch: () => void;
+  isProcessing: boolean;
+  batchProgress: number;
+  batchTarget: number;
+  configSummary: string;
 }
 
 export default function LeftPanel({
@@ -33,6 +48,9 @@ export default function LeftPanel({
   setActiveTab,
   selectedPreset,
   onPresetSelect,
+  userPresets,
+  onDeleteUserPreset,
+  onSaveUserPreset,
   quality,
   setQuality,
   originalWidth,
@@ -51,61 +69,77 @@ export default function LeftPanel({
   targetFileSize,
   setTargetFileSize,
   fileSizeUnit,
-  setFileSizeUnit
+  setFileSizeUnit,
+  sharpenAmount,
+  setSharpenAmount,
+  isCropEnabled,
+  images,
+  onProcessBatch,
+  isProcessing,
+  batchProgress,
+  batchTarget,
+  configSummary
 }: LeftPanelProps) {
   return (
-    <div className="w-96 bg-card border-r border-border flex flex-col overflow-hidden">
+    <div className="w-[380px] glass border-r border-border/50 flex flex-col overflow-hidden z-20">
       {/* Tabs */}
-      <div className="flex border-b border-border bg-muted flex-shrink-0">
+      <div className="flex p-2 gap-1 bg-secondary/30 flex-shrink-0">
         <button
           onClick={() => setActiveTab('presets')}
           className={`
-            flex-1 px-4 py-3 font-medium text-sm transition-colors
+            flex-1 px-3 py-2.5 rounded-lg font-semibold text-xs transition-all-smooth
             flex items-center justify-center gap-2
             ${activeTab === 'presets'
-              ? 'bg-card text-foreground border-b-2 border-primary'
-              : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
+              ? 'bg-primary text-white shadow-lg shadow-primary/20'
+              : 'text-muted-foreground hover:text-foreground hover:bg-card'
             }
           `}
         >
+          <LayoutGrid className="w-3.5 h-3.5" />
           AV Presets
         </button>
         <button
           onClick={() => setActiveTab('custom')}
           className={`
-            flex-1 px-4 py-3 font-medium text-sm transition-colors
+            flex-1 px-3 py-2.5 rounded-lg font-semibold text-xs transition-all-smooth
             flex items-center justify-center gap-2
             ${activeTab === 'custom'
-              ? 'bg-card text-foreground border-b-2 border-primary'
-              : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
+              ? 'bg-primary text-white shadow-lg shadow-primary/20'
+              : 'text-muted-foreground hover:text-foreground hover:bg-card'
             }
           `}
         >
+          <Settings2 className="w-3.5 h-3.5" />
           Custom
         </button>
         <button
           onClick={() => setActiveTab('batch')}
           className={`
-            flex-1 px-4 py-3 font-medium text-sm transition-colors
+            flex-1 px-3 py-2.5 rounded-lg font-semibold text-xs transition-all-smooth
             flex items-center justify-center gap-2
             ${activeTab === 'batch'
-              ? 'bg-card text-foreground border-b-2 border-primary'
-              : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
+              ? 'bg-primary text-white shadow-lg shadow-primary/20'
+              : 'text-muted-foreground hover:text-foreground hover:bg-card'
             }
           `}
         >
+          <FolderSync className="w-3.5 h-3.5" />
           Batch
         </button>
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
         {activeTab === 'presets' && (
           <AVPresetsTab
             selectedPreset={selectedPreset}
             onPresetSelect={onPresetSelect}
+            userPresets={userPresets}
+            onDeleteUserPreset={onDeleteUserPreset}
             quality={quality}
             setQuality={setQuality}
+            sharpenAmount={sharpenAmount}
+            setSharpenAmount={setSharpenAmount}
           />
         )}
         {activeTab === 'custom' && (
@@ -118,23 +152,30 @@ export default function LeftPanel({
             setCustomHeight={setCustomHeight}
             aspectRatioLocked={aspectRatioLocked}
             setAspectRatioLocked={setAspectRatioLocked}
+            onSaveUserPreset={onSaveUserPreset}
             onCrop={onCrop}
             onConvert={onConvert}
             onCompress={onCompress}
-            quality={quality}
-            setQuality={setQuality}
             outputFormat={outputFormat}
             setOutputFormat={setOutputFormat}
             targetFileSize={targetFileSize}
             setTargetFileSize={setTargetFileSize}
             fileSizeUnit={fileSizeUnit}
             setFileSizeUnit={setFileSizeUnit}
+            sharpenAmount={sharpenAmount}
+            setSharpenAmount={setSharpenAmount}
+            isCropEnabled={isCropEnabled}
           />
         )}
         {activeTab === 'batch' && (
-          <div className="p-6 text-center text-muted-foreground">
-            Batch processing options coming soon
-          </div>
+          <BatchTab
+            images={images}
+            onProcessBatch={onProcessBatch}
+            isProcessing={isProcessing}
+            progress={batchProgress}
+            targetCount={batchTarget}
+            configSummary={configSummary}
+          />
         )}
       </div>
     </div>
