@@ -160,10 +160,7 @@ function App() {
       <header className="bg-card border-b border-border px-6 py-4 flex-shrink-0">
         <div className="flex items-center gap-3">
           <img src="/image.png" alt="Logo" className="w-8 h-8" />
-          <div>
-            <h1 className="text-xl font-bold">AV Image Resizer</h1>
-            <p className="text-sm text-muted-foreground">Professional image optimization for AV technicians</p>
-          </div>
+          <h1 className="text-xl font-bold">AV Image Resizer</h1>
         </div>
       </header>
 
