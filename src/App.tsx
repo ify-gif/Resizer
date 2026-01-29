@@ -24,6 +24,13 @@ export interface ImageData {
   height: number;
 }
 
+export interface CropBox {
+  x: number;      // Left position (% of image width, 0-1)
+  y: number;      // Top position (% of image height, 0-1)
+  width: number;  // Width (% of image width, 0-1)
+  height: number; // Height (% of image height, 0-1)
+}
+
 export const AV_PRESETS: AVPreset[] = [
   {
     id: 'crestron-1070',
@@ -96,6 +103,8 @@ function App() {
   const [fileSizeUnit, setFileSizeUnit] = useState<'KB' | 'MB'>('KB');
   const [sharpenAmount, setSharpenAmount] = useState<number>(0);
   const [isCropEnabled, setIsCropEnabled] = useState<boolean>(false);
+  const [cropMode, setCropMode] = useState<boolean>(false);
+  const [cropBox, setCropBox] = useState<CropBox | null>(null);
   const [userPresets, setUserPresets] = useState<AVPreset[]>(() => {
     const saved = localStorage.getItem('ify_user_presets');
     return saved ? JSON.parse(saved) : [];
@@ -137,13 +146,41 @@ function App() {
   };
 
   const handleCrop = () => {
-    setIsCropEnabled(!isCropEnabled);
+    if (images.length > 0) {
+      setIsCropEnabled(false);
+      setCropBox(null);
+      setCropMode(true);
+    }
+  };
+
+  const handleApplyCrop = (box: CropBox | null) => {
+    setCropBox(box);
+    setCropMode(false);
+  };
+
+  const handleCancelCrop = () => {
+    setCropMode(false);
+  };
+
+  const handleClearCrop = () => {
+    setCropBox(null);
+    setIsCropEnabled(false);
+    setCropMode(false);
+  };
+
+  const handleEnableAutoCrop = () => {
+    setIsCropEnabled(true);
+    setCropMode(false);
+    setCropBox(null);
   };
 
   const handleClear = () => {
     setImages([]);
     setCustomWidth(0);
     setCustomHeight(0);
+    setCropBox(null);
+    setCropMode(false);
+    setIsCropEnabled(false);
   };
 
   const handleConvert = (format: string) => {
@@ -225,7 +262,8 @@ function App() {
             quality: quality,
             sharpenAmount: sharpenAmount,
             isCropEnabled: isCropEnabled,
-            targetFileSize: fileSizeUnit === 'MB' ? targetFileSize : targetFileSize / 1024
+            targetFileSize: fileSizeUnit === 'MB' ? targetFileSize : targetFileSize / 1024,
+            cropBox: cropBox
           });
 
           // Filename logic
@@ -313,6 +351,10 @@ function App() {
           sharpenAmount={sharpenAmount}
           setSharpenAmount={setSharpenAmount}
           isCropEnabled={isCropEnabled}
+          hasCropBox={cropBox !== null}
+          onClearCrop={handleClearCrop}
+          onEnableAutoCrop={handleEnableAutoCrop}
+          isEditingCrop={cropMode}
           images={images}
           onProcessBatch={handleBatchProcess}
           isProcessing={isProcessingBatch}
@@ -323,12 +365,6 @@ function App() {
 
         {/* Visualization & Mastery Panel */}
         <div className="flex-1 flex flex-col relative">
-          {images.length > 0 && (
-            <div className="px-8 pt-4 flex-shrink-0">
-              <UploadZone onFilesAdded={handleFilesAdded} hasImages={true} />
-            </div>
-          )}
-
           <PreviewPanel
             images={images}
             selectedPreset={selectedPreset}
@@ -342,6 +378,12 @@ function App() {
             sharpenAmount={sharpenAmount}
             isCropEnabled={isCropEnabled}
             onClear={handleClear}
+            onFilesAdded={handleFilesAdded}
+            cropMode={cropMode}
+            cropBox={cropBox}
+            onApplyCrop={handleApplyCrop}
+            onCancelCrop={handleCancelCrop}
+            onClearCrop={handleClearCrop}
           />
 
           {images.length === 0 && (

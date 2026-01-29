@@ -35,6 +35,10 @@ interface LeftPanelProps {
   sharpenAmount: number;
   setSharpenAmount: (amount: number) => void;
   isCropEnabled: boolean;
+  hasCropBox: boolean;
+  onClearCrop: () => void;
+  onEnableAutoCrop: () => void;
+  isEditingCrop: boolean;
   images: ImageData[];
   onProcessBatch: () => void;
   isProcessing: boolean;
@@ -73,6 +77,10 @@ export default function LeftPanel({
   sharpenAmount,
   setSharpenAmount,
   isCropEnabled,
+  hasCropBox,
+  onClearCrop,
+  onEnableAutoCrop,
+  isEditingCrop,
   images,
   onProcessBatch,
   isProcessing,
@@ -165,6 +173,10 @@ export default function LeftPanel({
             sharpenAmount={sharpenAmount}
             setSharpenAmount={setSharpenAmount}
             isCropEnabled={isCropEnabled}
+            hasCropBox={hasCropBox}
+            onClearCrop={onClearCrop}
+            onEnableAutoCrop={onEnableAutoCrop}
+            isEditingCrop={isEditingCrop}
           />
         )}
         {activeTab === 'batch' && (

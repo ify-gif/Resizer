@@ -1,6 +1,7 @@
 // @ts-ignore
 import Pica from 'pica';
 import imageCompression from 'browser-image-compression';
+import { CropBox } from '../App';
 
 export interface ProcessImageOptions {
     file: File;
@@ -11,24 +12,40 @@ export interface ProcessImageOptions {
     sharpenAmount: number; // 0-100
     isCropEnabled: boolean;
     targetFileSize?: number; // in MB
+    cropBox?: CropBox | null; // Custom crop coordinates
 }
 
 export async function processImage(options: ProcessImageOptions): Promise<Blob> {
-    const { file, targetWidth, targetHeight, format, quality, sharpenAmount, isCropEnabled, targetFileSize } = options;
+    const { file, targetWidth, targetHeight, format, quality, sharpenAmount, isCropEnabled, targetFileSize, cropBox } = options;
     const pica = new Pica();
 
     // 1. Load Image
     const img = await createImageBitmap(file);
 
-    // 2. Calculate Dimensions & Crop
-    // Logic mirrored from PreviewPanel.tsx
-    const sourceCanvas = document.createElement('canvas');
-    const sourceCtx = sourceCanvas.getContext('2d');
+    // 2. Setup Canvases
+    const targetCanvas = document.createElement('canvas');
+    targetCanvas.width = targetWidth;
+    targetCanvas.height = targetHeight;
 
-    if (!sourceCtx) throw new Error('Canvas context not available');
+    if (cropBox) {
+        // --- CUSTOM CROP ---
+        const sx = cropBox.x * img.width;
+        const sy = cropBox.y * img.height;
+        const sw = cropBox.width * img.width;
+        const sh = cropBox.height * img.height;
 
-    if (isCropEnabled) {
-        // Auto-Center Crop
+        const sourceCanvas = document.createElement('canvas');
+        sourceCanvas.width = sw;
+        sourceCanvas.height = sh;
+        sourceCanvas.getContext('2d')?.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+
+        await pica.resize(sourceCanvas, targetCanvas, {
+            unsharpAmount: sharpenAmount > 0 ? (sharpenAmount * 1.5) : 0,
+            unsharpRadius: 0.6,
+            unsharpThreshold: 2
+        });
+    } else if (isCropEnabled) {
+        // --- AUTO-CENTER CROP ---
         const sourceAspect = img.width / img.height;
         const targetAspect = targetWidth / targetHeight;
 
@@ -42,27 +59,53 @@ export async function processImage(options: ProcessImageOptions): Promise<Blob> 
             sy = (img.height - sh) / 2;
         }
 
+        const sourceCanvas = document.createElement('canvas');
         sourceCanvas.width = sw;
         sourceCanvas.height = sh;
-        sourceCtx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+        sourceCanvas.getContext('2d')?.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+
+        await pica.resize(sourceCanvas, targetCanvas, {
+            unsharpAmount: sharpenAmount > 0 ? (sharpenAmount * 1.5) : 0,
+            unsharpRadius: 0.6,
+            unsharpThreshold: 2
+        });
     } else {
-        // Fit logic
+        // --- OFF (LETTERBOX / FIT) ---
+        const sourceAspect = img.width / img.height;
+        const targetAspect = targetWidth / targetHeight;
+
+        let dx = 0, dy = 0, dw = targetWidth, dh = targetHeight;
+
+        if (sourceAspect > targetAspect) {
+            dh = targetWidth / sourceAspect;
+            dy = (targetHeight - dh) / 2;
+        } else {
+            dw = targetHeight * sourceAspect;
+            dx = (targetWidth - dw) / 2;
+        }
+
+        const sourceCanvas = document.createElement('canvas');
         sourceCanvas.width = img.width;
         sourceCanvas.height = img.height;
-        sourceCtx.drawImage(img, 0, 0);
+        sourceCanvas.getContext('2d')?.drawImage(img, 0, 0);
+
+        const scaledCanvas = document.createElement('canvas');
+        scaledCanvas.width = dw;
+        scaledCanvas.height = dh;
+
+        await pica.resize(sourceCanvas, scaledCanvas, {
+            unsharpAmount: sharpenAmount > 0 ? (sharpenAmount * 1.5) : 0,
+            unsharpRadius: 0.6,
+            unsharpThreshold: 2
+        });
+
+        const targetCtx = targetCanvas.getContext('2d');
+        if (targetCtx) {
+            targetCtx.fillStyle = 'black';
+            targetCtx.fillRect(0, 0, targetWidth, targetHeight);
+            targetCtx.drawImage(scaledCanvas, dx, dy);
+        }
     }
-
-    // 3. Resize with Pica (Lanczos3)
-    const targetCanvas = document.createElement('canvas');
-    targetCanvas.width = targetWidth;
-    targetCanvas.height = targetHeight;
-
-    // Apply Pica resize with unsharp mask
-    await pica.resize(sourceCanvas, targetCanvas, {
-        unsharpAmount: sharpenAmount > 0 ? (sharpenAmount * 1.5) : 0,
-        unsharpRadius: 0.6,
-        unsharpThreshold: 2
-    });
 
     // 4. Determine Output Format
     let outputMime = file.type;

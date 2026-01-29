@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Lock, Unlock, Zap, Scissors, Minimize2, Repeat, BookmarkPlus, ChevronDown, ChevronUp } from 'lucide-react';
+import { Lock, Unlock, Scissors, Minimize2, Repeat, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface CustomTabProps {
   originalWidth: number;
@@ -23,6 +23,10 @@ interface CustomTabProps {
   sharpenAmount: number;
   setSharpenAmount: (amount: number) => void;
   isCropEnabled: boolean;
+  hasCropBox: boolean;
+  onClearCrop: () => void;
+  onEnableAutoCrop: () => void;
+  isEditingCrop: boolean;
 }
 
 export default function CustomTab({
@@ -46,7 +50,11 @@ export default function CustomTab({
   setFileSizeUnit,
   sharpenAmount,
   setSharpenAmount,
-  isCropEnabled
+  isCropEnabled,
+  hasCropBox,
+  onClearCrop,
+  onEnableAutoCrop,
+  isEditingCrop
 }: CustomTabProps) {
   const [aspectRatio, setAspectRatio] = useState(originalWidth / originalHeight);
   const [presetName, setPresetName] = useState('');
@@ -98,12 +106,14 @@ export default function CustomTab({
             <div className="flex items-center p-1">
               <button
                 onClick={onCrop}
-                className={`flex-1 flex items-center justify-center gap-3 py-3 px-2 rounded-lg transition-colors ${isCropEnabled ? 'bg-primary/10 text-primary' : 'hover:bg-secondary/50 text-muted-foreground'}`}
+                className={`flex-1 flex items-center justify-center gap-3 py-3 px-2 rounded-lg transition-colors ${isCropEnabled || hasCropBox ? 'bg-primary/10 text-primary' : 'hover:bg-secondary/50 text-muted-foreground'}`}
               >
                 <Scissors className="w-4 h-4" />
                 <div className="text-left">
                   <div className="text-[10px] font-bold uppercase tracking-tight">Crop</div>
-                  <div className="text-[9px] opacity-70 font-mono">{isCropEnabled ? 'AUTO-CENTER ACTIVE' : 'OFF'}</div>
+                  <div className="text-[9px] opacity-70 font-mono">
+                    {isEditingCrop || hasCropBox ? 'MANUAL CUSTOM MODE' : isCropEnabled ? 'AUTO-CENTER ACTIVE' : 'OFF'}
+                  </div>
                 </div>
               </button>
               <div className="w-px h-8 bg-border/50 mx-1" />
@@ -116,13 +126,49 @@ export default function CustomTab({
               </button>
             </div>
             {showCropOptions && (
-              <div className="bg-secondary/20 p-3 border-t border-border/50 space-y-2 animate-in slide-in-from-top-2">
-                <div className="flex items-center justify-between text-[10px] font-medium text-muted-foreground">
-                  <span>Logic</span>
-                  <span className="text-primary font-bold">Center-Weighted</span>
+              <div className="bg-secondary/20 p-3 border-t border-border/50 space-y-3 animate-in slide-in-from-top-2">
+                <div className="text-[10px] font-medium text-muted-foreground mb-2">Select Mode</div>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={onClearCrop}
+                    className={`p-2 rounded-lg border text-left transition-all ${!isCropEnabled && !hasCropBox && !isEditingCrop
+                      ? 'bg-primary/10 border-primary text-primary shadow-[0_0_10px_rgba(59,130,246,0.1)]'
+                      : 'bg-card border-border/50 text-muted-foreground hover:border-primary/40'
+                      }`}
+                  >
+                    <div className="text-[10px] font-bold uppercase">Off</div>
+                    <div className="text-[8px] opacity-70">No crop</div>
+                  </button>
+                  <button
+                    onClick={() => {
+                      onClearCrop();
+                      onEnableAutoCrop();
+                    }}
+                    className={`p-2 rounded-lg border text-left transition-all ${isCropEnabled && !hasCropBox && !isEditingCrop
+                      ? 'bg-primary/10 border-primary text-primary shadow-[0_0_10px_rgba(59,130,246,0.1)]'
+                      : 'bg-card border-border/50 text-muted-foreground hover:border-primary/40'
+                      }`}
+                  >
+                    <div className="text-[10px] font-bold uppercase">Auto</div>
+                    <div className="text-[8px] opacity-70">Center</div>
+                  </button>
+                  <button
+                    onClick={onCrop}
+                    className={`p-2 rounded-lg border text-left transition-all ${isEditingCrop || hasCropBox
+                      ? 'bg-primary/10 border-primary text-primary shadow-[0_0_10px_rgba(59,130,246,0.1)]'
+                      : 'bg-card border-border/50 text-muted-foreground hover:border-primary/40'
+                      }`}
+                  >
+                    <div className="text-[10px] font-bold uppercase">Custom</div>
+                    <div className="text-[8px] opacity-70">Manual</div>
+                  </button>
                 </div>
                 <p className="text-[9px] text-muted-foreground/70 leading-relaxed">
-                  Automatically calculates the best center cut to fill target dimensions without stretching.
+                  {isEditingCrop || hasCropBox
+                    ? 'Using your manually selected crop region.'
+                    : isCropEnabled
+                      ? 'Auto calculates the best center cut to fill target dimensions.'
+                      : 'No cropping applied. Image will be resized to fit.'}
                 </p>
               </div>
             )}
@@ -137,7 +183,7 @@ export default function CustomTab({
               >
                 <Minimize2 className="w-4 h-4" />
                 <div className="text-left">
-                  <div className="text-[10px] font-bold uppercase tracking-tight">Slim</div>
+                  <div className="text-[10px] font-bold uppercase tracking-tight">Compress</div>
                   <div className="text-[9px] opacity-70 font-mono">1-CLICK OPTIMIZE</div>
                 </div>
               </button>
@@ -155,9 +201,8 @@ export default function CustomTab({
                 {/* Target File Size Controls */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-                      Payload Ceiling
-                      <Zap className="w-3 h-3 text-orange-500" />
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                      Max Size
                     </label>
                     <div className="flex bg-secondary/50 rounded-lg p-0.5 border border-border/50">
                       {['KB', 'MB'].map((unit) => (
@@ -245,7 +290,7 @@ export default function CustomTab({
           </h3>
           <button
             onClick={() => setAspectRatioLocked(!aspectRatioLocked)}
-            className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-bold transition-all ${aspectRatioLocked ? 'bg-primary/20 text-primary border border-primary/20' : 'bg-muted text-muted-foreground border border-border'}`}
+            className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-bold transition-all ${aspectRatioLocked ? 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/20' : 'bg-red-500/20 text-red-500 border border-red-500/20'}`}
           >
             {aspectRatioLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
             {aspectRatioLocked ? 'LOCKED' : 'FREE'}
@@ -297,9 +342,8 @@ export default function CustomTab({
 
       {/* Save to Bench section */}
       <div className="space-y-4 pt-4 border-t border-border/50">
-        <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] px-1 flex items-center gap-2">
-          <BookmarkPlus className="w-3 h-3" />
-          Archive Configuration
+        <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] px-1">
+          Archive
         </h3>
 
         <div className="space-y-3">
@@ -313,28 +357,29 @@ export default function CustomTab({
             />
           </div>
 
-          <button
-            onClick={handleSave}
-            disabled={!presetName.trim()}
-            className={`
-              w-full py-3 rounded-xl border text-[10px] font-bold uppercase tracking-widest transition-all px-4
-              ${presetName.trim()
-                ? 'bg-primary/20 border-primary/40 text-primary hover:bg-primary/30 cursor-pointer'
-                : 'bg-muted/50 border-border/50 text-muted-foreground cursor-not-allowed'
-              }
-            `}
-          >
-            Add to My Bench
-          </button>
+          <div className="flex justify-center">
+            <button
+              onClick={handleSave}
+              disabled={!presetName.trim()}
+              className={`
+                py-2 px-4 rounded-lg border text-[10px] font-bold uppercase tracking-widest transition-all
+                ${presetName.trim()
+                  ? 'bg-primary/20 border-primary/40 text-primary hover:bg-primary/30 cursor-pointer'
+                  : 'bg-muted/50 border-border/50 text-muted-foreground cursor-not-allowed'
+                }
+              `}
+            >
+              Add to My Bench
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Precision Detail (Sharpening) */}
       <div className="space-y-4 pt-4 border-t border-border/50">
         <div className="flex items-center justify-between">
-          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
             Precision Detail
-            <Zap className="w-3 h-3 text-primary" />
           </label>
           <span className="text-sm font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
             {sharpenAmount}%
