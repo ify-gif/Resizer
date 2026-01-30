@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import UploadZone from './components/UploadZone';
 import LeftPanel from './components/LeftPanel';
 import PreviewPanel from './components/PreviewPanel';
+import logo from './assets/logo.png';
 
 // @ts-ignore
 import JSZip from 'jszip';
@@ -301,7 +302,7 @@ function App() {
       <header className="glass border-b border-border/50 px-8 py-4 flex-shrink-0 z-50 flex items-center justify-between app-region-drag select-none h-[72px]">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20 shadow-lg shadow-primary/5">
-            <img src="/logo.png" alt="Logo" className="w-6 h-6 object-contain" />
+            <img src={logo} alt="Logo" className="w-6 h-6 object-contain" />
           </div>
           <div>
             <h1 className="text-lg font-bold tracking-tight text-foreground leading-none">Image Resizer</h1>
