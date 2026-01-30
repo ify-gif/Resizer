@@ -185,7 +185,7 @@ export default function PreviewPanel({
     }
 
     resizeImage();
-  }, [currentImage, targetWidth, targetHeight, quality, outputFormat, sharpenAmount, cropBox]);
+  }, [currentImage, targetWidth, targetHeight, quality, outputFormat, sharpenAmount, cropBox, isCropEnabled, targetFileSize, fileSizeUnit]);
 
   const resizeImage = async () => {
     if (!currentImage || !targetWidth || !targetHeight) return;
