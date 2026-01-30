@@ -21,3 +21,12 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Build outputs
+dist
+dist-electron
+release
+out
+bin
+obj
+.claude
