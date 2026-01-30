@@ -283,7 +283,7 @@ function App() {
       // Download Trigger
       const link = document.createElement('a');
       link.href = URL.createObjectURL(content);
-      link.download = `AV_Batch_Export_${Date.now()}.zip`;
+      link.download = `Batch_Export_${Date.now()}.zip`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -304,7 +304,7 @@ function App() {
             <img src="/logo.png" alt="Logo" className="w-6 h-6 object-contain" />
           </div>
           <div>
-            <h1 className="text-lg font-bold tracking-tight text-foreground leading-none">AV Image Resizer</h1>
+            <h1 className="text-lg font-bold tracking-tight text-foreground leading-none">Image Resizer</h1>
             <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] mt-1 opacity-80">Pro Optimization Suite</p>
           </div>
         </div>

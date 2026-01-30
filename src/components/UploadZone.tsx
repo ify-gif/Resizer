@@ -61,7 +61,7 @@ export default function UploadZone({ onFilesAdded, hasImages }: UploadZoneProps)
 
       <div className="text-center px-12">
         <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed font-medium">
-          {isDragActive ? 'Ready for precision ingest...' : 'Drop your high-precision AV assets here to begin optimization.'}
+          {isDragActive ? 'Ready for precision ingest...' : 'Drop your high-precision assets here to begin optimization.'}
           <br />
           Supports Ultra-HD JPG, PNG, WebP and HEIC.
         </p>

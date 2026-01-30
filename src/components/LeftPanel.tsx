@@ -104,7 +104,7 @@ export default function LeftPanel({
           `}
         >
           <LayoutGrid className="w-3.5 h-3.5" />
-          AV Presets
+          Presets
         </button>
         <button
           onClick={() => setActiveTab('custom')}

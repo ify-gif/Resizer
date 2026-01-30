@@ -25,7 +25,7 @@ let win: BrowserWindow | null;
 
 function createWindow() {
     win = new BrowserWindow({
-        icon: path.join(process.env.VITE_PUBLIC!, 'logo.png'),
+        icon: path.join(process.env.VITE_PUBLIC!, 'logo.ico'),
         webPreferences: {
             preload: path.join(__dirname, 'preload.mjs'),
         },
@@ -38,7 +38,7 @@ function createWindow() {
             symbolColor: '#74b1be',
             height: 32
         },
-        title: 'AV Image Resizer',
+        title: 'Image Resizer',
     });
 
     // Hide the native menu bar for a cleaner "app" feel
