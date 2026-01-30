@@ -25,14 +25,14 @@ Image Resizer is a lightweight, powerful desktop application (built with Electro
 ## 🚀 Getting Started
 
 ### 📦 Download the App
-If you just want to use the tool, download the latest version from the [Releases](https://github.com/your-username/resizer/releases) page. (Note: Replace with your actual link once shared).
+If you just want to use the tool, download the latest version from the [Releases](https://github.com/ify-gif/Resizer/releases) page.
 
 ### 🛠️ Developer Setup
 If you want to modify the code or contribute:
 
 1.  **Clone the Repo**:
     ```bash
-    git clone https://github.com/your-username/resizer.git
+    git clone https://github.com/ify-gif/Resizer.git
     cd resizer
     ```
 2.  **Install Dependencies**:
