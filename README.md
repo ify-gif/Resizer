@@ -62,4 +62,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
+## 🔗 Connect
+*   **Portfolio**: [ify-gold.com](https://ify-gold.com/)
+*   **LinkedIn**: [in/ifygoldn](https://www.linkedin.com/in/ifygoldn)
+
 **Developed for professionals, by professionals.** 🎙️📸🏾
