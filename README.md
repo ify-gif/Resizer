@@ -51,9 +51,9 @@ License & Protection
 This project is licensed under the **GNU General Public License v3.0 (GPL-3.0).
 
 What this means:
-*   Giving Back**: Anyone can use, share, and improve this code for free.
-*   Anti-Profit Protection**: If someone modifies this code, they **must** release their version under the same open-source license. They cannot turn your hard work into a private, paid product.
-*   No Warranty**: This software is provided "AS IS". You are protected from liability if the software behaves unexpectedly.
+*   Giving Back: Anyone can use, share, and improve this code for free.
+*   Anti-Profit Protection: If someone modifies this code, they "must" release their version under the same open-source license. They cannot turn your hard work into a private, paid product.
+*   No Warrant: This software is provided "AS IS". You are protected from liability if the software behaves unexpectedly.
 
 ---
 
@@ -63,7 +63,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ---
 
 Connect
-*   **Portfolio: [ify-gold.com](https://ify-gold.com/)
-*   **LinkedIn: [in/ifygoldn](https://www.linkedin.com/in/ifygoldn)
+*   Portfolio: [ify-gold.com](https://ify-gold.com/)
+*   LinkedIn: [in/ifygoldn](https://www.linkedin.com/in/ifygoldn)
 
 Developed for professionals, by professionals.
