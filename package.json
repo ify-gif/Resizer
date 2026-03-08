@@ -23,7 +23,7 @@
       "dist-electron"
     ],
     "win": {
-      "icon": "public/Website-Favicon-Color.png",
+      "icon": "public/Icon-Only-Color.png",
       "target": [
         "nsis"
       ]
