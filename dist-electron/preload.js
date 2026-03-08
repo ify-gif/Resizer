@@ -1,20 +1,20 @@
-import { contextBridge as s, ipcRenderer as o } from "electron";
-s.exposeInMainWorld("ipcRenderer", {
-  on(...n) {
-    const [e, r] = n;
-    return o.on(e, (t, ...c) => r(t, ...c));
+import { contextBridge, ipcRenderer } from "electron";
+contextBridge.exposeInMainWorld("ipcRenderer", {
+  on(...args) {
+    const [channel, listener] = args;
+    return ipcRenderer.on(channel, (event, ...args2) => listener(event, ...args2));
   },
-  off(...n) {
-    const [e, ...r] = n;
-    return o.off(e, ...r);
+  off(...args) {
+    const [channel, ...rest] = args;
+    return ipcRenderer.off(channel, ...rest);
   },
-  send(...n) {
-    const [e, ...r] = n;
-    return o.send(e, ...r);
+  send(...args) {
+    const [channel, ...rest] = args;
+    return ipcRenderer.send(channel, ...rest);
   },
-  invoke(...n) {
-    const [e, ...r] = n;
-    return o.invoke(e, ...r);
+  invoke(...args) {
+    const [channel, ...rest] = args;
+    return ipcRenderer.invoke(channel, ...rest);
   }
   // You can expose other apts you need here.
   // ...

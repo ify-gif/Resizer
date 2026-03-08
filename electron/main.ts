@@ -25,7 +25,7 @@ let win: BrowserWindow | null;
 
 function createWindow() {
     win = new BrowserWindow({
-        icon: path.join(process.env.VITE_PUBLIC!, 'logo.ico'),
+        icon: path.join(process.env.VITE_PUBLIC!, 'Website-Favicon-Color.png'),
         webPreferences: {
             preload: path.join(__dirname, 'preload.mjs'),
         },

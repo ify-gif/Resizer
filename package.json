@@ -1,7 +1,7 @@
 {
   "name": "ify-resizer",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {
@@ -23,9 +23,9 @@
       "dist-electron"
     ],
     "win": {
-      "icon": "public/logo.ico",
+      "icon": "public/Website-Favicon-Color.png",
       "target": [
-        "portable"
+        "nsis"
       ]
     }
   },

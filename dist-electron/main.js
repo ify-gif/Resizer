@@ -1,16 +1,18 @@
-import { app as n, BrowserWindow as s, ipcMain as l, Notification as h, shell as _, Menu as m } from "electron";
-import o from "node:path";
-import { fileURLToPath as R } from "node:url";
-const r = o.dirname(R(import.meta.url));
-process.env.APP_ROOT = o.join(r, "..");
-const t = process.env.VITE_DEV_SERVER_URL, P = o.join(process.env.APP_ROOT, "dist-electron"), a = o.join(process.env.APP_ROOT, "dist");
-process.env.VITE_PUBLIC = t ? o.join(process.env.APP_ROOT, "public") : a;
-let e;
-function c() {
-  e = new s({
-    icon: o.join(process.env.VITE_PUBLIC, "logo.ico"),
+import { app, BrowserWindow, ipcMain, Notification, shell, Menu } from "electron";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+process.env.APP_ROOT = path.join(__dirname, "..");
+const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
+const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
+const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
+process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST;
+let win;
+function createWindow() {
+  win = new BrowserWindow({
+    icon: path.join(process.env.VITE_PUBLIC, "Website-Favicon-Color.png"),
     webPreferences: {
-      preload: o.join(r, "preload.mjs")
+      preload: path.join(__dirname, "preload.mjs")
     },
     width: 1200,
     height: 800,
@@ -21,26 +23,38 @@ function c() {
       symbolColor: "#74b1be",
       height: 32
     },
-    title: "AV Image Resizer"
-  }), m.setApplicationMenu(null), e.webContents.on("did-finish-load", () => {
-    e == null || e.webContents.send("main-process-message", (/* @__PURE__ */ new Date()).toLocaleString());
-  }), t ? e.loadURL(t) : e.loadFile(o.join(a, "index.html"));
+    title: "Image Resizer"
+  });
+  Menu.setApplicationMenu(null);
+  win.webContents.on("did-finish-load", () => {
+    win == null ? void 0 : win.webContents.send("main-process-message", (/* @__PURE__ */ new Date()).toLocaleString());
+  });
+  if (VITE_DEV_SERVER_URL) {
+    win.loadURL(VITE_DEV_SERVER_URL);
+  } else {
+    win.loadFile(path.join(RENDERER_DIST, "index.html"));
+  }
 }
-n.on("window-all-closed", () => {
-  process.platform !== "darwin" && (n.quit(), e = null);
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
+    app.quit();
+    win = null;
+  }
 });
-n.on("activate", () => {
-  s.getAllWindows().length === 0 && c();
+app.on("activate", () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow();
+  }
 });
-n.whenReady().then(c);
-l.handle("show-notification", (d, { title: i, body: p }) => {
-  new h({ title: i, body: p }).show();
+app.whenReady().then(createWindow);
+ipcMain.handle("show-notification", (_, { title, body }) => {
+  new Notification({ title, body }).show();
 });
-l.handle("open-folder", (d, i) => {
-  _.openPath(i);
+ipcMain.handle("open-folder", (_, folderPath) => {
+  shell.openPath(folderPath);
 });
 export {
-  P as MAIN_DIST,
-  a as RENDERER_DIST,
-  t as VITE_DEV_SERVER_URL
+  MAIN_DIST,
+  RENDERER_DIST,
+  VITE_DEV_SERVER_URL
 };

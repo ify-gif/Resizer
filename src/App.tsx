@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import UploadZone from './components/UploadZone';
 import LeftPanel from './components/LeftPanel';
 import PreviewPanel from './components/PreviewPanel';
-import logo from './assets/logo.png';
+import logo from '../public/Icon-Only-Color.png';
 
 // @ts-ignore
 import JSZip from 'jszip';
